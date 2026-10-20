@@ -87,15 +87,15 @@ There is one role check per request. A customer can never see or change another 
 
 **BR-3 The server decides.** The browser's prices, quantities and totals are never trusted. At checkout the server reads the current price and stock for every item, recalculates the totals, and rejects the order, with a clear message, if an item is inactive, unavailable or out of stock, or if the totals sent do not match.
 
-**BR-4 Order snapshot.** An order keeps, for every item, the product name, the variant's options, the SKU, the quantity and the price paid, and it keeps the delivery address used. Later changes to a product or an address do not change a past order.
+**BR-4 An order keeps its own copy.** When an order is placed, it stores what was bought: the product name, the chosen options, the SKU, the quantity and the price paid, and the delivery address. Changing a product or an address later does not change orders already placed.
 
-**BR-5 No overselling.** Two customers cannot buy the last item at the same time. Stock is checked and reduced in the same database transaction that creates the order, and the database refuses a negative stock quantity.
+**BR-5 The last item goes to one buyer.** Two customers cannot both buy the last item. Checking the stock and reducing it happen together in one database transaction, and the database refuses a stock quantity below zero.
 
-**BR-6 Stock movements.** Stock only changes through a movement record (sale, cancellation, adjustment, return) with a reason and who or what caused it. A variant's stock always equals the sum of its movements.
+**BR-6 Stock changes are recorded.** Each variant has a stock quantity. Whenever it changes (a sale, a cancellation or an administrator's adjustment), a record is kept with the old and new quantity, a reason, and who or what made the change.
 
-**BR-7 Stock hold for unpaid orders.** When an order is placed, its stock is taken immediately. An EFT order that is not paid within a set time is cancelled and its stock returned (**D-4** sets the time).
+**BR-7 Stock is reserved when an order is placed.** The stock for an order is set aside when the order is placed. If the order is cancelled, or an EFT order is not paid in time, the stock is released. How long an unpaid EFT order is kept is a setting (**D-4**).
 
-**BR-8 Statuses are separate.** An order has an **order status** and a **payment status**, and they change independently. Every change is recorded in a history with the time and the person or system that made it.
+**BR-8 Two statuses.** An order has an **order status** and a **payment status**, and they change independently. Each change is saved in a history with the time and who or what made it.
 
 **BR-9 EFT verification.** An EFT order starts with the payment status *Pending*. Only an administrator can mark it *Paid*, and only after the money has reached the business bank account, with the amount received. A proof of payment, if the customer uploads one, helps the administrator but never marks an order as paid. If the amount received differs from the order total, the administrator decides what to do and the difference is recorded.
 
@@ -142,7 +142,7 @@ The full design, with relationships and constraints, will be written in `docs/da
 | OrderItem | One line of an order: the snapshot of what was bought |
 | Payment | One payment attempt for an order: method, amount, payment status, reference |
 | PaymentNotification | A processed gateway notification, for idempotency |
-| StockMovement | A change to a variant's stock, with a reason |
+| StockMovement | A record of one change to a variant's stock: old and new quantity, reason, and who or what made it |
 | OrderStatusHistory | Every change of an order's or payment's status |
 
 Design rules that follow from the business rules: money is `decimal(18,2)` or whole cents; SKUs are unique; stock cannot be negative (a check constraint); order items store their own copies of names and prices; indexes support search and the common admin queries.
@@ -272,7 +272,24 @@ These need an answer from the owner before the related work starts. Each has a s
 | D-7 | Where is it hosted? | A free host for the portfolio demo with made-up data. A real shop needs a server or a managed host, a domain and backups. |
 | D-8 | Should guests be able to check out without an account? | No for version 1: an account makes order history and support simpler. |
 
-## 14. Glossary
+## 14. Sources and independence
+
+The business rules follow common, publicly documented e-commerce practice. They were written for this project from its README and from the public sources below, independently of any employer's systems, documents or code. The names used (Order, OrderItem, Payment, StockMovement and so on) are ordinary terms.
+
+| Rule | Common practice, and where it is documented publicly |
+| --- | --- |
+| BR-1 Money | Storing money as whole units of the smallest currency, not floating point: the *Money* pattern in Martin Fowler's *Patterns of Enterprise Application Architecture* |
+| BR-3 The server decides | Never trusting prices or totals sent by a browser: OWASP guidance on business-logic and parameter tampering |
+| BR-4 An order keeps its own copy | Order lines that store the price paid at the time of purchase: how public shop platforms such as Shopify and WooCommerce record order items |
+| BR-5 The last item goes to one buyer | Protecting a shared quantity with a transaction and a constraint: Microsoft Learn, *Handling Concurrency Conflicts* (Entity Framework Core) |
+| BR-6 Stock changes are recorded | An audit record of changes: general audit-trail practice, and the stock-change notes shown by public shop platforms |
+| BR-7 Stock is reserved when an order is placed | Releasing unpaid orders after a time: WooCommerce's "Hold stock (minutes)" inventory setting |
+| BR-8 Two statuses | Keeping payment and fulfilment apart: Shopify's separate payment status and fulfilment status in its public help |
+| BR-13 Idempotent payments | Ignoring a repeated request safely: Stripe's public documentation on idempotent requests |
+
+The sources are named so they can be checked. Check each one before relying on it.
+
+## 15. Glossary
 
 | Term | Meaning |
 | --- | --- |
