@@ -117,7 +117,7 @@ A customer can see how a chosen wig looks on them before buying it.
 
 **How it works, briefly.** Face tracking finds a few points on the face (forehead, chin and both temples). The wig picture is scaled, tilted and placed using those points, so it follows the head.
 
-**Status.** A working prototype exists and is being tried out. It still uses placeholder wig shapes. Real wig pictures, and connecting it to the product pages, come with the catalogue.
+**Status.** Planned. It will be built with the product catalogue, using real wig pictures on the product pages.
 
 ## 🔎 Product Discovery
 
@@ -593,7 +593,7 @@ This is the planned structure and may change as the project is built. The `tests
 
 The repository has been created and the project is in the initial planning and design phase. The specification, requirements, architecture, style guide, database design, milestones and tasks will be written before the main features are built.
 
-The features described here are the intended scope and are not implemented yet. The exception is the virtual try-on, of which a working browser prototype exists (it still uses placeholder wig pictures).
+The features described here are the intended scope and are not implemented yet.
 
 ---
 
