@@ -10,7 +10,7 @@ Customers will be able to browse products, choose a length, texture and colour, 
 
 The initial implementation targets the South African market, with prices shown in South African rand (ZAR).
 
-📄 The product requirements will be documented in `docs/specification.md`. Where this README and the specification differ, the specification takes precedence.
+📄 The product requirements are documented in [`docs/specification.md`](docs/specification.md). Where this README and the specification differ, the specification takes precedence.
 
 ---
 
@@ -468,7 +468,7 @@ Project documentation will be kept in a `docs/` folder as the project develops. 
 
 | Document | Purpose |
 |---|---|
-| `specification.md` | Product vision, scope, features and acceptance criteria |
+| [`specification.md`](docs/specification.md) | Product vision, scope, features and acceptance criteria |
 | `requirements.md` | Functional and non-functional requirements |
 | `architecture.md` | Application architecture and design decisions |
 | `database-design.md` | Database entities, relationships and constraints |
