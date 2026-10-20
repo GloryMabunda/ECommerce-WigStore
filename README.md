@@ -6,7 +6,7 @@ An e-commerce platform that lets customers discover, browse and buy wigs, hair b
 
 Inches Wig Store is a full-stack web application being developed to give customers a convenient and secure way to shop for hair, and to give the business owner the tools to manage products, stock, orders and payments.
 
-Customers will be able to browse products, choose a length, texture and colour, manage a shopping cart, place orders and pay. An administration portal will support product management, inventory control, order fulfilment and payment verification.
+Customers will be able to browse products, choose a length, texture and colour, **see how a wig looks on them with a virtual try-on**, manage a shopping cart, place orders and pay. An administration portal will support product management, inventory control, order fulfilment and payment verification.
 
 The initial implementation targets the South African market, with prices shown in South African rand (ZAR).
 
@@ -26,6 +26,7 @@ Customers will be able to:
 - Search for products and filter the catalogue by length, texture, colour and price.
 - View product descriptions, images, prices and available variants.
 - Select options such as length (in inches), hair texture, colour, density, cap size or lace type, depending on the product.
+- **See how a wig looks on them** with a virtual try-on, using their camera or an uploaded photo.
 - Add products to their shopping cart and update quantities.
 - Register and sign in securely.
 - Manage delivery addresses.
@@ -63,6 +64,8 @@ Select a Product
         ↓
 Choose Length, Texture and Colour
         ↓
+Try It On (optional)
+        ↓
 Add Product to Cart
         ↓
 Review Cart and Delivery Details
@@ -98,6 +101,23 @@ The initial catalogue will support these product categories.
 | Wig Care & Accessories | Wig caps, wig stands, brushes, shampoo, edge products | Size, colour, style |
 
 Products will have descriptions, prices, images, availability and the variant options that apply to them. Categories and variants are managed in the administration portal.
+
+## 🪞 Virtual Try-On: "See how it looks on you"
+
+A customer can see how a chosen wig looks on them before buying it.
+
+- **Camera or photo.** The wig follows the customer's face live through their camera, or is placed on an uploaded photo.
+- **The real wig.** The picture shown is a photo of the actual wig, in the colour and length chosen, with an opening for the face.
+- **Fine-tuning.** Simple controls move, resize and tilt the wig, and the result can be saved as a picture.
+- **Hide my own hair.** On an uploaded photo, the customer's own hair can be painted over, so only the wig shows.
+- **Free to run, and private.** It uses free, open-source tools (Google's MediaPipe face tracking and hair detection) that run **in the customer's browser**. A photo or camera picture never leaves their device, so nothing is uploaded or stored. This also keeps the feature simple under privacy rules such as POPIA.
+- **An honest preview.** It is an approximation, not a promise: it is a flat overlay without depth, movement or matched lighting, and the page says so.
+
+**Adding wigs to the try-on.** A small built-in tool turns a photo of a wig on a plain background into a try-on picture: it removes the background, trims the picture, lets the owner mark the face opening, and gives the picture and the line to add to the catalogue. It also runs in the browser.
+
+**How it works, briefly.** Face tracking finds a few points on the face (forehead, chin and both temples). The wig picture is scaled, tilted and placed using those points, so it follows the head.
+
+**Status.** A working prototype exists and is being tried out. It still uses placeholder wig shapes. Real wig pictures, and connecting it to the product pages, come with the catalogue.
 
 ## 🔎 Product Discovery
 
@@ -208,6 +228,7 @@ The following technologies are planned.
 ## Libraries and Integrations
 
 - xUnit for automated testing.
+- MediaPipe (Google, free and open source) for the try-on: face tracking and hair detection, running in the browser.
 - Online payment gateway (provider to be confirmed).
 - Email notification service (provider to be selected).
 
@@ -270,6 +291,7 @@ Controllers handle web requests, services hold the business rules, and Entity Fr
 | Catalogue | Categories, products, images and product details |
 | Variants | Length, texture, colour and other options, SKUs, prices and variant stock |
 | Search | Product search, category filtering and discovery |
+| Try-On | Browser-based virtual try-on: face tracking, wig placement, hair hiding and the wig-picture tool |
 | Cart | Cart items, quantities and cart calculations |
 | Checkout | Delivery details, stock checks and order creation |
 | Orders | Order history, status changes and fulfilment |
@@ -389,6 +411,7 @@ Planned measures:
 - Appropriate logging and error handling.
 - Protection of customer information in line with privacy requirements, including POPIA.
 - Database backup and recovery planning.
+- Try-on pictures stay in the customer's browser: they are not uploaded, sent to a service, or stored.
 
 Payment card details are not stored by the application. Secrets and production credentials are never committed to source control.
 
@@ -433,6 +456,7 @@ Automated tests will cover the critical business rules.
 - Invalid payment notifications.
 - Duplicate payment notifications.
 - Invalid or oversized image uploads.
+- Try-on: no face found, several faces, tilted or turned heads, unusual lighting, and wig pictures with a wrong opening.
 
 The tests will grow alongside the implementation, with particular attention to checkout, stock consistency and payment processing.
 
@@ -463,6 +487,7 @@ Work will be tracked through GitHub milestones, issues and a project board.
 |---|---|
 | M1 · Foundation & Database | Requirements, architecture, style guide, solution setup, database configuration and first migrations |
 | M2 · Product Catalogue | Categories, products, variants, images, search and filtering |
+| M2b · Virtual Try-On | The try-on on product pages with real wig pictures, hair hiding, the wig-picture tool and accessibility checks |
 | M3 · Cart & Checkout | Customer accounts, shopping cart, delivery details and order creation |
 | M4 · Payments | Manual EFT workflow, payment verification and online gateway integration |
 | M5 · Admin & Order Management | Product administration, inventory, order management and fulfilment |
@@ -486,6 +511,7 @@ Possible later additions:
 - 🤖 Personalised product recommendations.
 - 📱 Progressive Web App features.
 - 📏 A length guide that shows how each length falls on the body.
+- 🪞 Hair hiding on the live camera, and a more realistic try-on with depth and matched lighting.
 
 These will be prioritised after the core shopping flow is working.
 
@@ -507,6 +533,7 @@ It shows experience with:
 - Inventory management and data consistency.
 - Payment integration and verification.
 - Secure handling of customer data.
+- Computer vision in the browser (face tracking, hair segmentation) with free tools, and privacy by design.
 - Automated testing.
 - Git-based version control and CI.
 - Technical documentation and project planning.
@@ -566,7 +593,7 @@ This is the planned structure and may change as the project is built. The `tests
 
 The repository has been created and the project is in the initial planning and design phase. The specification, requirements, architecture, style guide, database design, milestones and tasks will be written before the main features are built.
 
-The features described here are the intended scope and are not implemented yet.
+The features described here are the intended scope and are not implemented yet. The exception is the virtual try-on, of which a working browser prototype exists (it still uses placeholder wig pictures).
 
 ---
 
