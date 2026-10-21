@@ -469,7 +469,7 @@ Project documentation will be kept in a `docs/` folder as the project develops. 
 | Document | Purpose |
 |---|---|
 | [`specification.md`](docs/specification.md) | Product vision, scope, features and acceptance criteria |
-| `requirements.md` | Functional and non-functional requirements |
+| [`requirements.md`](docs/requirements.md) | Functional and non-functional requirements |
 | `architecture.md` | Application architecture and design decisions |
 | `database-design.md` | Database entities, relationships and constraints |
 | `testing-strategy.md` | Test coverage and approach |
