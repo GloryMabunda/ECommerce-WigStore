@@ -109,4 +109,30 @@ public class AdminSeederTests(SqlServerFixture fixture) : IClassFixture<SqlServe
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         Assert.Null(await users.FindByEmailAsync(email));
     }
+
+    [Fact]
+    public async Task Existing_user_without_the_Administrator_role_is_repaired()
+    {
+        using var provider = BuildProvider();
+        var email = NewEmail();
+        using (var first = provider.CreateScope())
+        {
+            await first.ServiceProvider.GetRequiredService<AdminSeeder>().SeedAsync(null, null);
+            var users = first.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var created = await users.CreateAsync(
+                new ApplicationUser { UserName = email, Email = email, DisplayName = "Partial", CreatedAt = DateTimeOffset.UtcNow },
+                _strongPassword);
+            Assert.True(created.Succeeded);
+        }
+
+        using var second = provider.CreateScope();
+        await second.ServiceProvider.GetRequiredService<AdminSeeder>().SeedAsync(email, _strongPassword);
+
+        var secondUsers = second.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await secondUsers.FindByEmailAsync(email);
+        Assert.NotNull(user);
+        Assert.True(await secondUsers.IsInRoleAsync(user, Roles.Administrator));
+        var context = second.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Equal(1, await context.Users.CountAsync(u => u.Email == email));
+    }
 }

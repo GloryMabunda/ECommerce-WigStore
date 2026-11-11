@@ -20,8 +20,14 @@ public class AdminSeeder(UserManager<ApplicationUser> users, RoleManager<Identit
             return;
         }
 
-        if (await users.FindByEmailAsync(email) is not null)
+        var existing = await users.FindByEmailAsync(email);
+        if (existing is not null)
         {
+            if (!await users.IsInRoleAsync(existing, Roles.Administrator))
+            {
+                Check(await users.AddToRoleAsync(existing, Roles.Administrator), "assign the Administrator role");
+            }
+
             return;
         }
 
