@@ -26,7 +26,7 @@ SQL Server treats `NULL` values as equal in a unique index, which is what we wan
 
 **Context.** SQL Server cannot index `nvarchar(max)`, and a nonclustered index key may not exceed 1,700 bytes. A string property without a length is mapped to `nvarchar(max)` by EF Core.
 
-**Decision.** Every option column is `nvarchar(50)`. The seven text options use at most 700 bytes (7 x 50 characters x 2 bytes), and the two integer columns add 8, well inside the limit. The same habit applies to every string column in the model: an explicit length, chosen to fit the data (for example `Sku` is 64, `Slug` is 100).
+**Decision.** Every option column is `nvarchar(50)`. The seven text options use at most 700 bytes (7 x 50 characters x 2 bytes), and `ProductId` and `LengthInches` add 8 bytes, well inside the limit. The same habit applies to every string column in the model: an explicit length, chosen to fit the data (for example `Sku` is 64, `Slug` is 100).
 
 **Consequence.** A longer option value is refused by the database. A new option column must be given a length and the key size re-checked.
 
@@ -86,13 +86,15 @@ SQL Server treats `NULL` values as equal in a unique index, which is what we wan
 
 **Consequence.** A stale update raises `DbUpdateConcurrencyException`. The checkout code in M3 must either retry or use an atomic conditional update inside its transaction; the test `Concurrent_stock_updates_raise_a_concurrency_error` proves the token works.
 
-## 11. The first administrator is seeded from configuration, and the seeder has a known weakness (2026-11-11)
+## 11. The first administrator is seeded from configuration, and an existing account is promoted only with its password (2026-11-11)
 
-**Context.** FR-ACC-8 requires that the first administrator is created from configuration, not through public registration. `AdminSeeder` runs at startup when `Admin:Email` and `Admin:Password` are both set. It creates the `Administrator` and `Customer` roles, and creates the user if it does not exist.
+**Context.** FR-ACC-8 requires that the first administrator is created from configuration, not through public registration. `AdminSeeder` runs at startup when `Admin:Email` and `Admin:Password` are both set. It creates the `Administrator` and `Customer` roles, and creates the user if it does not exist. An earlier version promoted any existing user with the configured email without proving control of the account, which would let anyone who registered that email before the first start become an administrator once public registration exists (M3).
 
-**Decision.** If a user with that email already exists, the seeder repairs it by adding the `Administrator` role when missing, without checking a password. This makes a half-seeded database recoverable (tested by `AdminSeederTests.Existing_user_without_the_Administrator_role_is_repaired`). The password is never logged. Weak passwords make the seeder throw with the Identity error codes.
+**Decision.** If a user with that email already exists, the seeder adds the `Administrator` role only when the user is already in the role (nothing to do) or the configured password matches the account's password (the role is repaired). This keeps a half-seeded database recoverable (`AdminSeederTests.Existing_user_without_the_Administrator_role_is_repaired`). If the account is not an administrator and the password does not match, the seeder logs a warning, promotes nobody and returns (`AdminSeederTests.Existing_user_with_a_different_password_is_not_promoted`). The warning contains neither the email nor the password. Weak passwords for a new administrator make the seeder throw with the Identity error codes.
 
-**Consequence.** **Known security follow-up.** Once public registration exists (M3), anyone could register the configured administrator email before the first start and be promoted to administrator at the next startup, because no password is checked for an existing user. This must be mitigated before public registration is released, for example by promoting only a user the seeder created, by requiring the seeder's password to match, or by reserving the configured email at registration. It is acceptable in M1 because no public registration exists.
+**Why log and skip rather than throw.** A mismatch is not a startup failure of the site: throwing would let anyone who registers the configured email take the whole application down at its next start. Skipping keeps the site up, the warning tells the operator what happened, and no privilege is granted.
+
+**Consequence.** The configured password is now what proves the operator controls the account, so a stolen or pre-registered account cannot be promoted. Reserving the configured email at registration remains an option for M3 but is no longer needed to close this weakness.
 
 ## 12. Identity options follow the requirements (2026-11-11)
 

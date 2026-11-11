@@ -48,7 +48,7 @@ Before you push, run `dotnet format` and `dotnet build`.
   - a check constraint or foreign key violation is error `547`: `await AssertRefusedAsync(context, 547, "CK_OrderItems_Quantity_Positive");`
   - a unique index violation is error `2601` or `2627`: `await SqlAssert.AssertUniqueViolationAsync(context, "IX_Payments_Reference");`
   - To prove a foreign key refuses a delete, use a fresh context, so the database and not EF's change tracking refuses it.
-  - Asserting only `DbUpdateException` is not enough. (The earliest catalogue tests do this and are marked for tightening in [`database-design.md`](database-design.md).)
+  - Asserting only `DbUpdateException` is not enough.
 - Also test the boundary that must still work (for example zero stock is allowed, a payment without a provider reference is allowed).
 - Integration tests use the real SQL Server through `SqlServerFixture`; see [`architecture.md`](architecture.md). Create test data with `TestData` so names and slugs do not collide.
 - Do not use the EF in-memory provider.

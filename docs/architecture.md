@@ -94,7 +94,7 @@ A rule applies throughout: business rules live in services, which controllers ca
 1. Register the `AppDbContext` against `ConnectionStrings:DefaultConnection`, ASP.NET Core Identity (`ApplicationUser`, `IdentityRole<Guid>`, options from `IdentityDefaults`), the `AdminSeeder`, a health check on the database context, and MVC.
 2. Build the app.
 3. **In Development only,** apply pending migrations (`Database.MigrateAsync()`). In every other environment the deploy step applies migrations, and it must do so before the app starts (decision 6 in [`decisions.md`](decisions.md)).
-4. **When both `Admin:Email` and `Admin:Password` are configured,** in any environment, run `AdminSeeder`: create the `Administrator` and `Customer` roles, and create the administrator or repair the role of an existing user. The password is never logged. If the credentials are not configured, nothing is seeded.
+4. **When both `Admin:Email` and `Admin:Password` are configured,** in any environment, run `AdminSeeder`: create the `Administrator` and `Customer` roles, and create the administrator, or repair the missing role of an existing user only when the configured password matches that account (otherwise log a warning without the email or password and promote nobody; decision 11). The password is never logged. If the credentials are not configured, nothing is seeded.
 5. Configure the HTTP pipeline: exception handler and HSTS outside Development, HTTPS redirection, routing, authorisation, static assets.
 6. Map `/health` and the default MVC route, then run.
 

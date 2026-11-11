@@ -11,7 +11,7 @@ The business rules it serves are in [`specification.md`](specification.md) (`BR-
 - **Times:** `datetimeoffset`.
 - **Enums:** stored as text (`nvarchar(20)`), not numbers, so the database is readable and reordering the C# enum cannot change stored meaning. There is no `CHECK` constraint on the allowed values; the application is the only writer of those values.
 - **Keys:** `int` identity primary keys named `PK_<Table>`, except the Identity tables, which use `uniqueidentifier` keys.
-- **Foreign keys:** named by EF Core as `FK_<DependentTable>_<PrincipalTable>_<Column>`. Every foreign key is `Restrict` (the database refuses to delete a parent that has children), with one exception: `OrderItems` to `Orders` is `Cascade`. See decision 3 in [`decisions.md`](decisions.md).
+- **Foreign keys:** named by EF Core as `FK_<DependentTable>_<PrincipalTable>_<Column>`. Every foreign key is `Restrict` (the database refuses to delete a parent that has children), except `OrderItems` to `Orders`, which is `Cascade`, and the ASP.NET Identity tables' own foreign keys, which keep the framework's cascades. See decision 3 in [`decisions.md`](decisions.md).
 - **Names:** tables are plural. Check constraints are `CK_<Table>_<Rule>` and indexes are `IX_<Table>_<Columns>`. The two catalogue check constraints use the singular `CK_ProductVariant_...` (they were named first); every later one uses the plural table name. See the [style guide](style-guide.md).
 - **Relationship to the specification:** spec section 7 calls the status-change entity `OrderStatusHistory`; the table EF Core created is `OrderStatusHistories`.
 
@@ -417,18 +417,18 @@ Indexes: `IX_StockMovements_VariantId_ChangedAt`, `IX_StockMovements_OrderId`.
 
 Every row names the constraint or index, the requirement it serves, and the test that proves the database enforces it. Test classes are in `tests/InchesWigStore.Tests/Data/` unless stated. "Refusal" tests run against a real SQL Server.
 
-Where a test asserts the error number and constraint name (547 for a check or foreign key, 2601 or 2627 for a unique index) through the `SqlAssert` helper, the assertion is strong. Where the test is marked "(exception only)", it checks only that the save is refused with a `DbUpdateException`, not which constraint refused it; those tests predate the helper and are listed in the follow-ups in section 6.
+Every refusal test asserts the error number and constraint name (547 for a check or foreign key, 2601 or 2627 for a unique index) through the `SqlAssert` helper, so a test fails if some other rule refuses the save. The one exception is the concurrency test, which asserts `DbUpdateConcurrencyException`.
 
 | Rule | Constraint or index | Requirement | Pinned by (class.method) |
 |---|---|---|---|
-| SKU is unique, ignoring case | `IX_ProductVariants_Sku` | FR-VAR-2, BR-2 | `CatalogueSchemaTests.Sku_is_unique_ignoring_case` (exception only) |
-| One variant per option combination, with `NULL` options equal | `IX_ProductVariants_ProductId_LengthInches_..._Style` | FR-VAR-1, BR-2 | `CatalogueSchemaTests.Duplicate_option_combination_on_same_product_is_refused` (exception only), `CatalogueSchemaTests.Accessory_with_no_options_saves_once_but_second_identical_is_refused` (exception only) |
-| Stock is never negative | `CK_ProductVariant_Stock_NonNegative` | FR-VAR-5, BR-5 | `CatalogueSchemaTests.Negative_stock_is_refused` (exception only); boundary: `CatalogueSchemaTests.Zero_stock_and_zero_price_are_allowed` |
-| Price is never negative | `CK_ProductVariant_Price_NonNegative` | BR-1 | `CatalogueSchemaTests.Negative_price_is_refused` (exception only) |
+| SKU is unique, ignoring case | `IX_ProductVariants_Sku` | FR-VAR-2, BR-2 | `CatalogueSchemaTests.Sku_is_unique_ignoring_case` |
+| One variant per option combination, with `NULL` options equal | `IX_ProductVariants_ProductId_LengthInches_..._Style` | FR-VAR-1, BR-2 | `CatalogueSchemaTests.Duplicate_option_combination_on_same_product_is_refused`, `CatalogueSchemaTests.Accessory_with_no_options_saves_once_but_second_identical_is_refused` |
+| Stock is never negative | `CK_ProductVariant_Stock_NonNegative` | FR-VAR-5, BR-5 | `CatalogueSchemaTests.Negative_stock_is_refused`; boundary: `CatalogueSchemaTests.Zero_stock_and_zero_price_are_allowed` |
+| Price is never negative | `CK_ProductVariant_Price_NonNegative` | BR-1 | `CatalogueSchemaTests.Negative_price_is_refused` |
 | Two writers cannot silently overwrite a variant's stock | `RowVersion` (`rowversion`) | BR-5 | `CatalogueSchemaTests.Concurrent_stock_updates_raise_a_concurrency_error` |
-| Category and product slugs are unique | `IX_Categories_Slug`, `IX_Products_Slug` | catalogue integrity (spec section 7) | `CatalogueSchemaTests.Duplicate_category_slug_and_product_slug_are_refused` (exception only) |
-| One try-on picture per product and colour | `IX_TryOnAssets_ProductId_Colour` | spec section 7 (TryOnAsset) | `CatalogueSchemaTests.TryOnAsset_is_unique_per_product_and_colour` (exception only) |
-| A product with variants cannot be deleted | `FK_ProductVariants_Products_ProductId` | FR-CAT-5 | `CatalogueSchemaTests.Variant_with_a_product_cannot_outlive_it` (exception only) |
+| Category and product slugs are unique | `IX_Categories_Slug`, `IX_Products_Slug` | catalogue integrity (spec section 7) | `CatalogueSchemaTests.Duplicate_category_slug_and_product_slug_are_refused` |
+| One try-on picture per product and colour | `IX_TryOnAssets_ProductId_Colour` | spec section 7 (TryOnAsset) | `CatalogueSchemaTests.TryOnAsset_is_unique_per_product_and_colour` |
+| A product with variants cannot be deleted | `FK_ProductVariants_Products_ProductId` | FR-CAT-5 | `CatalogueSchemaTests.Variant_with_a_product_cannot_outlive_it` |
 | An address needs an existing user | `FK_Addresses_AspNetUsers_UserId` | NFR-PRV-2 | `IdentitySchemaTests.Address_requires_an_existing_user` |
 | A user with addresses cannot be deleted | `FK_Addresses_AspNetUsers_UserId` | NFR-PRV-2 | `IdentitySchemaTests.Deleting_a_user_with_addresses_is_refused` |
 | An order total equals subtotal plus delivery fee | `CK_Orders_Total_Equals_Subtotal_Plus_Delivery` | BR-1, BR-16 | `OrderSchemaTests.Order_total_must_equal_subtotal_plus_delivery_fee` |
@@ -440,7 +440,7 @@ Where a test asserts the error number and constraint name (547 for a check or fo
 | A user has at most one cart | `IX_Carts_UserId` (filtered) | FR-CRT-4 | `OrderSchemaTests.A_user_has_at_most_one_cart` |
 | An order keeps its own copy of what was bought | `OrderItems` snapshot columns, `Ship*` columns | FR-ORD-5, FR-ORD-6, BR-4 | `OrderSchemaTests.Order_keeps_its_snapshot_when_variant_and_product_change` |
 | A variant that is on an order cannot be deleted | `FK_OrderItems_ProductVariants_VariantId` | FR-CAT-5, BR-4 | `OrderSchemaTests.Variant_that_is_on_an_order_cannot_be_deleted` |
-| A product that is on an order cannot be deleted | `FK_OrderItems_ProductVariants_VariantId` | FR-CAT-5, BR-4 | `OrderSchemaTests.Product_that_is_on_an_order_cannot_be_deleted` |
+| A product that is on an order cannot be deleted | `FK_OrderItems_ProductVariants_VariantId` | FR-CAT-5, BR-4 | `OrderSchemaTests.Product_that_is_on_an_order_cannot_be_deleted` (removes the product and its variant, so the refusal comes from the variant foreign key) |
 | A user with an order cannot be deleted | `FK_Orders_AspNetUsers_UserId` | NFR-PRV-2 | `OrderSchemaTests.User_with_an_order_cannot_be_deleted` |
 | Order status and payment status are independent, stored as text | `Orders.Status`, `Orders.PaymentStatus` | FR-ORD-7, BR-8 | `OrderSchemaTests.Order_and_payment_statuses_change_independently_and_are_stored_as_text` |
 | Status changes are kept with time and actor | `OrderStatusHistories` | FR-ORD-7, BR-8 | `OrderSchemaTests.Status_history_rows_are_kept_in_order` |
@@ -466,11 +466,11 @@ These are recorded so nobody assumes they are covered.
 
 - `CK_Orders_Subtotal_NonNegative`, `CK_Orders_DeliveryFee_NonNegative`, `CK_Orders_Total_NonNegative`, `CK_OrderItems_UnitPrice_NonNegative`.
 - Restrict foreign keys `CartItems` to `Carts`, `CartItems` to `ProductVariants`, `OrderStatusHistories` to `Orders`, `ProductImages` to `Products`, `TryOnAssets` to `Products`, `PaymentNotifications` to `Payments`, `Products` to `Categories`, and `Carts` to `AspNetUsers`.
-- The catalogue refusal tests marked "(exception only)" above should be tightened to assert the SQL error number and constraint name, as the later tests do.
 
 **Not enforced by the database (application rules, built in later milestones):**
 
 - Order status transitions (BR-11) and payment status transitions. The status columns hold any text up to 20 characters.
+- FR-VAR-1 (a product has one or more variants). A product row can exist with no variants.
 - Which options a variant may have for its category (BR-2). Any variant can fill any option column.
 - Exactly one main image per product.
 - Stock reservation and release (BR-7), cart expiry after 30 days (FR-CRT-3, `Carts.UpdatedAt` is the only support), and the EFT hold time (D-4).
