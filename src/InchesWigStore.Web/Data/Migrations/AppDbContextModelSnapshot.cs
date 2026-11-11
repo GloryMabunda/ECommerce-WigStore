@@ -402,6 +402,113 @@ namespace InchesWigStore.Web.Data.Migrations
                     b.ToTable("OrderStatusHistories");
                 });
 
+            modelBuilder.Entity("InchesWigStore.Web.Models.Payment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<long>("AmountCents")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("AmountReceivedCents")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProviderReference")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTimeOffset?>("VerifiedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("VerifiedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("ProviderReference")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Payments_ProviderReference")
+                        .HasFilter("[ProviderReference] IS NOT NULL");
+
+                    b.HasIndex("Reference")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Payments_Reference");
+
+                    b.ToTable("Payments", t =>
+                        {
+                            t.HasCheckConstraint("CK_Payments_AmountReceived_NonNegative", "[AmountReceivedCents] IS NULL OR [AmountReceivedCents] >= 0");
+
+                            t.HasCheckConstraint("CK_Payments_Amount_NonNegative", "[AmountCents] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("InchesWigStore.Web.Models.PaymentNotification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("NotificationId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("PaymentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaymentId");
+
+                    b.HasIndex("Provider", "NotificationId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_PaymentNotifications_Provider_NotificationId");
+
+                    b.ToTable("PaymentNotifications");
+                });
+
             modelBuilder.Entity("InchesWigStore.Web.Models.Product", b =>
                 {
                     b.Property<int>("Id")
@@ -561,6 +668,53 @@ namespace InchesWigStore.Web.Data.Migrations
                             t.HasCheckConstraint("CK_ProductVariant_Price_NonNegative", "[PriceCents] >= 0");
 
                             t.HasCheckConstraint("CK_ProductVariant_Stock_NonNegative", "[StockQuantity] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("InchesWigStore.Web.Models.StockMovement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("ChangedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ChangedBy")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("NewQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OldQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("VariantId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("VariantId", "ChangedAt");
+
+                    b.ToTable("StockMovements", t =>
+                        {
+                            t.HasCheckConstraint("CK_StockMovements_NewQuantity_NonNegative", "[NewQuantity] >= 0");
+
+                            t.HasCheckConstraint("CK_StockMovements_OldQuantity_NonNegative", "[OldQuantity] >= 0");
                         });
                 });
 
@@ -874,6 +1028,27 @@ namespace InchesWigStore.Web.Data.Migrations
                     b.Navigation("Order");
                 });
 
+            modelBuilder.Entity("InchesWigStore.Web.Models.Payment", b =>
+                {
+                    b.HasOne("InchesWigStore.Web.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("InchesWigStore.Web.Models.PaymentNotification", b =>
+                {
+                    b.HasOne("InchesWigStore.Web.Models.Payment", "Payment")
+                        .WithMany()
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Payment");
+                });
+
             modelBuilder.Entity("InchesWigStore.Web.Models.Product", b =>
                 {
                     b.HasOne("InchesWigStore.Web.Models.Category", "Category")
@@ -905,6 +1080,24 @@ namespace InchesWigStore.Web.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("InchesWigStore.Web.Models.StockMovement", b =>
+                {
+                    b.HasOne("InchesWigStore.Web.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("InchesWigStore.Web.Models.ProductVariant", "Variant")
+                        .WithMany()
+                        .HasForeignKey("VariantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Variant");
                 });
 
             modelBuilder.Entity("InchesWigStore.Web.Models.TryOnAsset", b =>

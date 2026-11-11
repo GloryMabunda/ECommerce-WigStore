@@ -23,3 +23,12 @@ public enum PaymentMethod
     Eft,
     Online,
 }
+
+public enum StockMovementReason
+{
+    Sale,
+    Cancellation,
+    EftExpired,
+    AdminAdjustment,
+    Initial,
+}

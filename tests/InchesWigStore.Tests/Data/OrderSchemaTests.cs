@@ -1,16 +1,13 @@
 using InchesWigStore.Web.Data;
 using InchesWigStore.Tests.Infrastructure;
 using InchesWigStore.Web.Models;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using static InchesWigStore.Tests.Infrastructure.SqlAssert;
 
 namespace InchesWigStore.Tests.Data;
 
 public class OrderSchemaTests(SqlServerFixture fixture) : IClassFixture<SqlServerFixture>
 {
-    private static SqlException Inner(DbUpdateException ex) =>
-        Assert.IsType<SqlException>(ex.InnerException);
-
     private static async Task<(Order Order, ApplicationUser User, ProductVariant Variant)> SaveOrderAsync(AppDbContext context)
     {
         var user = TestData.User();
@@ -19,15 +16,6 @@ public class OrderSchemaTests(SqlServerFixture fixture) : IClassFixture<SqlServe
         context.Orders.Add(order);
         await context.SaveChangesAsync();
         return (order, user, variant);
-    }
-
-    private static async Task<SqlException> AssertRefusedAsync(AppDbContext context, int number, string constraint)
-    {
-        var ex = await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
-        var sql = Inner(ex);
-        Assert.Equal(number, sql.Number);
-        Assert.Contains(constraint, sql.Message);
-        return sql;
     }
 
     [Fact]

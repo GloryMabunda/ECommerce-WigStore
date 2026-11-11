@@ -30,6 +30,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<OrderStatusHistory> OrderStatusHistories => Set<OrderStatusHistory>();
 
+    public DbSet<Payment> Payments => Set<Payment>();
+
+    public DbSet<PaymentNotification> PaymentNotifications => Set<PaymentNotification>();
+
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
