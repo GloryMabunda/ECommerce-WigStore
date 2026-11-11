@@ -30,6 +30,8 @@ public sealed class SqlServerFixture : IAsyncLifetime
         await context.Database.MigrateAsync();
     }
 
+    public string ConnectionString => _connectionString;
+
     public AppDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
