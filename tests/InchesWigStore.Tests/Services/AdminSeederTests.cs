@@ -135,4 +135,30 @@ public class AdminSeederTests(SqlServerFixture fixture) : IClassFixture<SqlServe
         var context = second.ServiceProvider.GetRequiredService<AppDbContext>();
         Assert.Equal(1, await context.Users.CountAsync(u => u.Email == email));
     }
+
+    [Fact]
+    public async Task Existing_user_with_a_different_password_is_not_promoted()
+    {
+        using var provider = BuildProvider();
+        var email = NewEmail();
+        using (var first = provider.CreateScope())
+        {
+            await first.ServiceProvider.GetRequiredService<AdminSeeder>().SeedAsync(null, null);
+            var users = first.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var created = await users.CreateAsync(
+                new ApplicationUser { UserName = email, Email = email, DisplayName = "Someone", CreatedAt = DateTimeOffset.UtcNow },
+                "An0ther!Passw0rd#2");
+            Assert.True(created.Succeeded);
+        }
+
+        using var second = provider.CreateScope();
+        await second.ServiceProvider.GetRequiredService<AdminSeeder>().SeedAsync(email, _strongPassword);
+
+        var secondUsers = second.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await secondUsers.FindByEmailAsync(email);
+        Assert.NotNull(user);
+        Assert.False(await secondUsers.IsInRoleAsync(user, Roles.Administrator));
+        var context = second.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Equal(1, await context.Users.CountAsync(u => u.Email == email));
+    }
 }

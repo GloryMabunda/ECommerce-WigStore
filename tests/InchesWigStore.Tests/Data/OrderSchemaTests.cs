@@ -36,6 +36,8 @@ public class OrderSchemaTests(SqlServerFixture fixture) : IClassFixture<SqlServe
         }
 
         await using var read = fixture.CreateContext();
+        Assert.Equal(originalPrice + 5_00, (await read.ProductVariants.SingleAsync(x => x.Id == variant.Id)).PriceCents);
+        Assert.Equal("Renamed product", (await read.Products.SingleAsync(p => p.Id == variant.ProductId)).Name);
         var item = (await read.Orders.Include(o => o.Items).SingleAsync(o => o.Id == order.Id)).Items.Single();
         Assert.Equal(originalName, item.ProductName);
         Assert.Equal(originalSku, item.Sku);
@@ -57,7 +59,7 @@ public class OrderSchemaTests(SqlServerFixture fixture) : IClassFixture<SqlServe
     public async Task Order_reference_is_unique()
     {
         await using var context = fixture.CreateContext();
-        var (first, user, variant) = await SaveOrderAsync(context);
+        var (first, _, _) = await SaveOrderAsync(context);
 
         await using var other = fixture.CreateContext();
         var duplicate = TestData.Order(TestData.User(), TestData.Variant(TestData.Product(TestData.Category())));
@@ -68,8 +70,6 @@ public class OrderSchemaTests(SqlServerFixture fixture) : IClassFixture<SqlServe
         var sql = Inner(ex);
         Assert.True(sql.Number is 2601 or 2627, $"Unexpected SQL error {sql.Number}");
         Assert.Contains("IX_Orders_Reference", sql.Message);
-        Assert.NotNull(user);
-        Assert.NotNull(variant);
     }
 
     [Fact]
@@ -270,5 +270,15 @@ public class OrderSchemaTests(SqlServerFixture fixture) : IClassFixture<SqlServe
         var sql = Inner(ex);
         Assert.True(sql.Number is 2601 or 2627, $"Unexpected SQL error {sql.Number}");
         Assert.Contains("IX_Carts_UserId", sql.Message);
+    }
+
+    [Fact]
+    public async Task Many_carts_without_a_user_are_allowed()
+    {
+        await using var context = fixture.CreateContext();
+        context.Carts.Add(new Cart { VisitorToken = Guid.NewGuid().ToString("N"), UpdatedAt = DateTimeOffset.UtcNow });
+        context.Carts.Add(new Cart { VisitorToken = Guid.NewGuid().ToString("N"), UpdatedAt = DateTimeOffset.UtcNow });
+
+        Assert.Equal(2, await context.SaveChangesAsync());
     }
 }

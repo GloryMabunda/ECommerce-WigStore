@@ -14,18 +14,23 @@ public class HealthEndpointTests(SqlServerFixture fixture) : IClassFixture<SqlSe
     private const string _unreachable =
         "Server=tcp:does-not-exist.invalid,1433;Database=x;User Id=u;Password=p;Connect Timeout=1;Encrypt=false";
 
-    private static WebApplicationFactory<Program> CreateFactory(
+    private static TestFactory CreateFactory(
         string connectionString, string? adminEmail = null, string? adminPassword = null) =>
-        new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        new(connectionString, adminEmail, adminPassword);
+
+    private sealed class TestFactory(string connectionString, string? adminEmail, string? adminPassword)
+        : WebApplicationFactory<Program>
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:DefaultConnection", connectionString);
-            if (adminEmail is not null)
-            {
-                builder.UseSetting("Admin:Email", adminEmail);
-                builder.UseSetting("Admin:Password", adminPassword);
-            }
-        });
+
+            // Blank unless the test sets them, so ambient Admin__* variables on a developer machine cannot leak in.
+            builder.UseSetting("Admin:Email", adminEmail ?? string.Empty);
+            builder.UseSetting("Admin:Password", adminPassword ?? string.Empty);
+        }
+    }
 
     [Fact]
     public async Task Health_returns_200_when_database_is_reachable()
@@ -56,7 +61,6 @@ public class HealthEndpointTests(SqlServerFixture fixture) : IClassFixture<SqlSe
     {
         const string email = "seeded.admin@example.com";
         using var factory = CreateFactory(fixture.ConnectionString, email, "Str0ng!Passw0rd#1");
-        using var client = factory.CreateClient();
 
         using var scope = factory.Services.CreateScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();

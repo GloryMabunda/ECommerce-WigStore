@@ -23,9 +23,10 @@ public class CatalogueSchemaTests(SqlServerFixture fixture) : IClassFixture<SqlS
         context.ProductVariants.Add(TestData.Variant(product, "wig-001"));
         await context.SaveChangesAsync();
 
-        context.ProductVariants.Add(TestData.Variant(product, "WIG-001"));
+        // A different product, so the combination index cannot be what refuses this.
+        context.ProductVariants.Add(TestData.Variant(TestData.Product(product.Category), "WIG-001"));
 
-        await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+        await SqlAssert.AssertUniqueViolationAsync(context, "IX_ProductVariants_Sku");
     }
 
     [Fact]
@@ -42,7 +43,7 @@ public class CatalogueSchemaTests(SqlServerFixture fixture) : IClassFixture<SqlS
         await context.SaveChangesAsync();
 
         context.ProductVariants.Add(Wavy22(product));
-        await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+        await SqlAssert.AssertUniqueViolationAsync(context, "IX_ProductVariants_ProductId_LengthInches_Texture_Colour_Density_CapSize_LaceType_Size_Style");
     }
 
     [Fact]
@@ -55,7 +56,7 @@ public class CatalogueSchemaTests(SqlServerFixture fixture) : IClassFixture<SqlS
 
         context.ProductVariants.Add(TestData.Variant(product));
 
-        await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+        await SqlAssert.AssertUniqueViolationAsync(context, "IX_ProductVariants_ProductId_LengthInches_Texture_Colour_Density_CapSize_LaceType_Size_Style");
     }
 
     [Fact]
@@ -64,7 +65,7 @@ public class CatalogueSchemaTests(SqlServerFixture fixture) : IClassFixture<SqlS
         await using var context = fixture.CreateContext();
         context.ProductVariants.Add(TestData.Variant(TestData.Product(TestData.Category()), stock: -1));
 
-        await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+        await SqlAssert.AssertRefusedAsync(context, 547, "CK_ProductVariant_Stock_NonNegative");
     }
 
     [Fact]
@@ -73,7 +74,7 @@ public class CatalogueSchemaTests(SqlServerFixture fixture) : IClassFixture<SqlS
         await using var context = fixture.CreateContext();
         context.ProductVariants.Add(TestData.Variant(TestData.Product(TestData.Category()), priceCents: -1));
 
-        await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+        await SqlAssert.AssertRefusedAsync(context, 547, "CK_ProductVariant_Price_NonNegative");
     }
 
     [Fact]
@@ -122,11 +123,11 @@ public class CatalogueSchemaTests(SqlServerFixture fixture) : IClassFixture<SqlS
         await context.SaveChangesAsync();
 
         context.Categories.Add(TestData.Category("DUP-CATEGORY"));
-        await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+        await SqlAssert.AssertUniqueViolationAsync(context, "IX_Categories_Slug");
         context.ChangeTracker.Clear();
 
         context.Products.Add(TestData.Product(await context.Categories.FirstAsync(c => c.Slug == "dup-category"), "dup-product"));
-        await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+        await SqlAssert.AssertUniqueViolationAsync(context, "IX_Products_Slug");
     }
 
     [Fact]
@@ -143,7 +144,7 @@ public class CatalogueSchemaTests(SqlServerFixture fixture) : IClassFixture<SqlS
         await context.SaveChangesAsync();
 
         context.TryOnAssets.Add(NewAsset(product, "Black"));
-        await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+        await SqlAssert.AssertUniqueViolationAsync(context, "IX_TryOnAssets_ProductId_Colour");
     }
 
     [Fact]
@@ -162,7 +163,7 @@ public class CatalogueSchemaTests(SqlServerFixture fixture) : IClassFixture<SqlS
         await using var context = fixture.CreateContext();
         context.Products.Remove(await context.Products.SingleAsync(p => p.Id == productId));
 
-        await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+        await SqlAssert.AssertRefusedAsync(context, 547, "FK_ProductVariants_Products_ProductId");
     }
 
     private static TryOnAsset NewAsset(Product product, string colour) => new()

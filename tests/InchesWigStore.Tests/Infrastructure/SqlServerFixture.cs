@@ -26,8 +26,17 @@ public sealed class SqlServerFixture : IAsyncLifetime
             TrustServerCertificate = true,
         }.ConnectionString;
 
-        await using var context = CreateContext();
-        await context.Database.MigrateAsync();
+        try
+        {
+            await using var context = CreateContext();
+            await context.Database.MigrateAsync();
+        }
+        catch
+        {
+            // xUnit does not call DisposeAsync when InitializeAsync throws, so do not leak the half-built database.
+            await DropDatabaseAsync();
+            throw;
+        }
     }
 
     public string ConnectionString => _connectionString;
@@ -40,7 +49,9 @@ public sealed class SqlServerFixture : IAsyncLifetime
         return new AppDbContext(options);
     }
 
-    public async Task DisposeAsync()
+    public Task DisposeAsync() => DropDatabaseAsync();
+
+    private async Task DropDatabaseAsync()
     {
         if (_databaseName.Length == 0)
         {
@@ -50,13 +61,13 @@ public sealed class SqlServerFixture : IAsyncLifetime
         SqlConnection.ClearAllPools();
         await using var connection = new SqlConnection(new SqlConnectionStringBuilder(_serverConnection)
         {
+            InitialCatalog = "master",
             TrustServerCertificate = true,
         }.ConnectionString);
         await connection.OpenAsync();
         await using var command = connection.CreateCommand();
         command.CommandText =
-            $"ALTER DATABASE [{_databaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{_databaseName}];";
+            $"IF DB_ID(N'{_databaseName}') IS NOT NULL BEGIN ALTER DATABASE [{_databaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{_databaseName}]; END";
         await command.ExecuteNonQueryAsync();
     }
-
 }
