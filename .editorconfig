@@ -1,0 +1,39 @@
+root = true
+
+[*]
+indent_style = space
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.cs]
+indent_size = 4
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# Naming: private fields are _camelCase, everything else PascalCase
+dotnet_naming_rule.private_fields_camel.symbols = private_fields
+dotnet_naming_rule.private_fields_camel.style = underscore_camel
+dotnet_naming_rule.private_fields_camel.severity = warning
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private, private_protected
+dotnet_naming_style.underscore_camel.required_prefix = _
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+
+dotnet_naming_rule.pascal_default.symbols = pascal_symbols
+dotnet_naming_rule.pascal_default.style = pascal_case
+dotnet_naming_rule.pascal_default.severity = warning
+dotnet_naming_symbols.pascal_symbols.applicable_kinds = class, struct, interface, enum, property, method, event, namespace, delegate
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+[*.{json,yml,yaml,csproj,props,cshtml,html,css,js}]
+indent_size = 2
+
+[src/InchesWigStore.Web/Data/Migrations/**]
+generated_code = true
+
+[tests/**.cs]
+# Test names use underscores for readability
+dotnet_diagnostic.CA1707.severity = none
