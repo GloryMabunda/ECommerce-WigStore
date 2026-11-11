@@ -23,6 +23,7 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         });
 
         builder.HasIndex(p => p.Reference).IsUnique().HasDatabaseName("IX_Payments_Reference");
+        // Filtered so payments not yet reported by the provider (NULL reference) do not collide with each other.
         builder.HasIndex(p => p.ProviderReference)
             .IsUnique()
             .HasDatabaseName("IX_Payments_ProviderReference")

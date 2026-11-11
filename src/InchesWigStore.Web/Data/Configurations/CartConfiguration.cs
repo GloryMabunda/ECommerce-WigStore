@@ -12,6 +12,7 @@ public class CartConfiguration : IEntityTypeConfiguration<Cart>
         builder.ToTable(t => t.HasCheckConstraint(
             "CK_Carts_Exactly_One_Owner",
             "([UserId] IS NOT NULL AND [VisitorToken] IS NULL) OR ([UserId] IS NULL AND [VisitorToken] IS NOT NULL)"));
+        // Filtered so any number of visitor carts (UserId NULL) are allowed while each user has at most one cart.
         builder.HasIndex(c => c.UserId)
             .IsUnique()
             .HasDatabaseName("IX_Carts_UserId")
