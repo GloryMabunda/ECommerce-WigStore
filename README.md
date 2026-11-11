@@ -389,7 +389,7 @@ Important design considerations:
 - Historical order and payment records must stay consistent.
 - Relationships, constraints and indexes must protect data integrity.
 
-The detailed design will be written up in `docs/database-design.md`.
+The detailed design is in [`docs/database-design.md`](docs/database-design.md).
 
 ---
 
@@ -464,18 +464,18 @@ The tests will grow alongside the implementation, with particular attention to c
 
 # 📚 Documentation
 
-Project documentation will be kept in a `docs/` folder as the project develops. Planned documents:
+Project documentation is kept in a `docs/` folder and updated as the project develops. `testing-strategy.md` and `deployment-guide.md` are still planned.
 
 | Document | Purpose |
 |---|---|
 | [`specification.md`](docs/specification.md) | Product vision, scope, features and acceptance criteria |
-| `requirements.md` | Functional and non-functional requirements |
-| `architecture.md` | Application architecture and design decisions |
-| `database-design.md` | Database entities, relationships and constraints |
+| [`requirements.md`](docs/requirements.md) | Functional and non-functional requirements |
+| [`architecture.md`](docs/architecture.md) | Application architecture, project layout, startup and test strategy |
+| [`database-design.md`](docs/database-design.md) | Database entities, relationships, constraints and the tests that pin them |
 | `testing-strategy.md` | Test coverage and approach |
 | `deployment-guide.md` | Environment configuration and deployment |
-| `style-guide.md` | Coding conventions and design guidelines |
-| `decisions.md` | Important technical decisions and why they were made |
+| [`style-guide.md`](docs/style-guide.md) | Coding conventions and design guidelines |
+| [`decisions.md`](docs/decisions.md) | Important technical decisions and why they were made |
 
 ---
 
@@ -589,11 +589,11 @@ This is the planned structure and may change as the project is built. The `tests
 
 # 🚧 Project Status
 
-**Status: Planning**
+**Status: M1 complete (foundation, CI and database schema). Features not yet built.**
 
-The repository has been created and the project is in the initial planning and design phase. The specification, requirements, architecture, style guide, database design, milestones and tasks will be written before the main features are built.
+Milestone M1 is complete: the specification and requirements are written, the ASP.NET Core solution is set up with continuous integration, and the database schema is in place with its migrations and tests (see [`docs/database-design.md`](docs/database-design.md)). The identity setup, the first administrator seeding and a health check are in place, but there are no sign-in pages yet. Work now moves to M2, the product catalogue.
 
-The features described here are the intended scope and are not implemented yet.
+The shopping features described here (catalogue, cart, checkout, payments, the administration portal and the try-on) are the intended scope and are not built yet.
 
 ---
 
