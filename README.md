@@ -587,6 +587,52 @@ This is the planned structure and may change as the project is built. The `tests
 
 ---
 
+# ▶️ Running Locally
+
+You need the **.NET 10 SDK** (`global.json` asks for 10.0.100 or later) and **SQL Server LocalDB**, which installs with Visual Studio. Any other SQL Server works too (see step 3).
+
+**1. Restore**
+
+```bash
+dotnet restore
+dotnet tool restore
+```
+
+**2. Run the site**
+
+```bash
+dotnet run --project src/InchesWigStore.Web --launch-profile http
+```
+
+Open <http://localhost:5038>. In the Development environment the app creates the `InchesWigStore` database on LocalDB and applies the migrations by itself. The health check is at <http://localhost:5038/health> and answers `Healthy` when the database is reachable.
+
+**3. Optional settings.** Keep real values out of Git: use [user secrets](https://learn.microsoft.com/aspnet/core/security/app-secrets) from the repository root.
+
+```bash
+# first administrator (created at start-up; the password needs 12+ characters with upper, lower, a digit and a symbol)
+dotnet user-secrets set "Admin:Email" "you@example.com" --project src/InchesWigStore.Web
+dotnet user-secrets set "Admin:Password" "<a strong password>" --project src/InchesWigStore.Web
+
+# a SQL Server other than LocalDB
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<connection string>" --project src/InchesWigStore.Web
+```
+
+**4. Run the tests.** They use LocalDB by default and create and drop their own databases. To use another SQL Server, set `TEST_SQL_CONNECTION` to a connection string whose login may create databases.
+
+```bash
+dotnet test
+```
+
+**5. Change the database.** After editing an entity or its configuration, add a migration:
+
+```bash
+dotnet ef migrations add <Name> --project src/InchesWigStore.Web --output-dir Data/Migrations
+```
+
+Outside Development the app does **not** migrate itself: run `dotnet ef database update --connection "<connection string>" --project src/InchesWigStore.Web` before starting a new version. More detail is in [`docs/architecture.md`](docs/architecture.md) and [`docs/decisions.md`](docs/decisions.md).
+
+---
+
 # 🚧 Project Status
 
 **Status: M1 complete (foundation, CI and database schema). Features not yet built.**
